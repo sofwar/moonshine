@@ -143,6 +143,13 @@ abstract class ModelResource extends CrudResource implements WithQueryBuilderCon
         return Gate::forUser($user)->allows($ability->value, $item);
     }
 
+    protected function getQueryCacheKeySuffix(): string
+    {
+        $identifier = MoonShineAuth::getGuard()->id() ?? 'guest';
+
+        return '_user_' . str_replace(['\\', '/', ':'], '_', (string) $identifier);
+    }
+
     /**
      * @param  array<int|string>  $ids
      */
@@ -332,7 +339,7 @@ abstract class ModelResource extends CrudResource implements WithQueryBuilderCon
         }
 
         if (! $wasRecentlyCreated) {
-            $item = $this->afterUpdated($item);
+            return $this->afterUpdated($item);
         }
 
         return $item;

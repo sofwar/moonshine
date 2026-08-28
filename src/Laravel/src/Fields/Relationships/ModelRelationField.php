@@ -20,6 +20,7 @@ use MoonShine\Contracts\UI\HasFieldsContract;
 use MoonShine\Contracts\UI\RelationFieldContract;
 use MoonShine\Core\Traits\HasResource;
 use MoonShine\Laravel\Resources\ModelResource;
+use MoonShine\Support\EnumToString;
 use MoonShine\UI\Exceptions\FieldException;
 use MoonShine\UI\Fields\Field;
 use Throwable;
@@ -157,7 +158,23 @@ abstract class ModelRelationField extends Field implements RelationFieldContract
 
     protected function prepareFill(array $raw = [], ?DataWrapperContract $casted = null): mixed
     {
-        return $casted?->getOriginal()->{$this->getRelationName()} ?? null;
+        $model = $casted?->getOriginal();
+
+        if (! $model instanceof Model) {
+            return null;
+        }
+
+        $relationName = $this->getRelationName();
+
+        if (! $model->isRelation($relationName)) {
+            return null;
+        }
+
+        if (! $model->relationLoaded($relationName)) {
+            $model->loadMissing($relationName);
+        }
+
+        return $model->getRelation($relationName);
     }
 
     /**
@@ -216,7 +233,9 @@ abstract class ModelRelationField extends Field implements RelationFieldContract
             $value = data_get($value, $this->getResource()?->getColumn());
         }
 
-        return $this->formattedValue ?? $value;
+        return (new EnumToString(
+            $this->formattedValue ?? $value
+        ))->convert();
     }
 
     public function isOutsideComponent(): bool
@@ -310,10 +329,22 @@ abstract class ModelRelationField extends Field implements RelationFieldContract
     public function getRelation(): ?Relation
     {
         if ($this->getParent() instanceof self) {
-            return $this->getParent()->getRelation()?->getRelated()?->{$this->getRelationName()}();
+            $related = $this->getParent()->getRelation()?->getRelated();
+
+            if (! $related instanceof Model || ! $related->isRelation($this->getRelationName())) {
+                return null;
+            }
+
+            return $related->{$this->getRelationName()}();
         }
 
-        return $this->getRelatedModel()?->{$this->getRelationName()}();
+        $model = $this->getRelatedModel();
+
+        if (! $model instanceof Model || ! $model->isRelation($this->getRelationName())) {
+            return null;
+        }
+
+        return $model->{$this->getRelationName()}();
     }
 
     protected function isOnChangeCondition(): bool

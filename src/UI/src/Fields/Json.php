@@ -195,7 +195,7 @@ class Json extends Field implements
         }
 
         if (! \is_null($this->modifyCreateButton)) {
-            $button = \call_user_func($this->modifyCreateButton, $button, $this);
+            return \call_user_func($this->modifyCreateButton, $button, $this);
         }
 
         return $button;
@@ -351,7 +351,7 @@ class Json extends Field implements
 
     protected function resolvePreview(): Renderable|string
     {
-        return $this->getComponent()
+        return (string) $this->getComponent()
             ->simple()
             ->preview()
             ->render();

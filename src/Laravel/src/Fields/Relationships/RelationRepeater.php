@@ -127,7 +127,7 @@ class RelationRepeater extends ModelRelationField implements
         }
 
         if (! \is_null($this->modifyCreateButton)) {
-            $button = value($this->modifyCreateButton, $button, $this);
+            return value($this->modifyCreateButton, $button, $this);
         }
 
         return $button;
@@ -453,6 +453,15 @@ class RelationRepeater extends ModelRelationField implements
                     $applyValues[$index] = $apply;
 
                     continue;
+                }
+
+                if ($field instanceof MorphTo) {
+                    data_set(
+                        /** @phpstan-ignore-next-line  */
+                        $applyValues[$index],
+                        $field->getMorphType(),
+                        data_get($apply, $field->getMorphType()),
+                    );
                 }
 
                 data_set(
